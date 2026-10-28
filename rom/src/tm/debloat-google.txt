@@ -1,0 +1,19 @@
+# Variante "semgoogle": remove também o núcleo do Google (Play Store, Play Services, assistente de configuração).
+# Deixa o sistema bem mais leve num tablet de 2 GB de RAM. A Play Store deixa de existir.
+Phonesky
+PrebuiltGmsCore*
+GmsCore*
+GoogleServicesFramework
+GoogleLoginService
+GoogleOneTimeInitializer
+GooglePartnerSetup
+GoogleBackupTransport
+GoogleRestore
+GoogleContactsSyncAdapter
+GoogleCalendarSyncAdapter
+GoogleFeedback
+ConfigUpdater
+AndroidPlatformServices
+SetupWizard*
+Velvet
+GoogleExtServices

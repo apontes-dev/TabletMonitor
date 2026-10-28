@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Cliente web (iPhone/iPad): servido pelo WebServer a partir do próprio executável -->
+    <EmbeddedResource Include="Web\*.*" LogicalName="web/%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

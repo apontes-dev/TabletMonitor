@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="TabletMonitor">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<title>Instalar TabletMonitor</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f4f6f8; --card: #ffffff; --text: #15191d; --muted: #5d6873; --line: #dfe4e9;
+    --accent: #12a06a; --accent-text: #ffffff; --ok: #12a06a; --warn: #c27c0e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0e1215; --card: #161b20; --text: #e8eef2; --muted: #93a0ac; --line: #262e36; --accent: #3ddc97; --accent-text: #08130e; --ok: #3ddc97; --warn: #f0b04a; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.55 -apple-system, system-ui, "Segoe UI", sans-serif; }
+  main { max-width: 640px; margin: 0 auto; padding: max(24px, env(safe-area-inset-top)) 16px 48px; }
+  header { display: flex; align-items: center; gap: 14px; margin: 8px 0 20px; }
+  header img { width: 56px; height: 56px; border-radius: 13px; }
+  h1 { font-size: 26px; margin: 0; font-weight: 650; letter-spacing: -.2px; }
+  header p { margin: 2px 0 0; color: var(--muted); font-size: 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px; margin: 14px 0; }
+  .step { display: flex; gap: 14px; }
+  .num { flex: none; width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: var(--accent-text); display: grid; place-items: center; font-weight: 700; font-size: 15px; }
+  h2 { font-size: 17px; margin: 2px 0 6px; }
+  ol, ul { margin: 6px 0 0; padding-left: 20px; color: var(--muted); }
+  li { margin: 3px 0; }
+  li b { color: var(--text); font-weight: 600; }
+  .btn { display: inline-block; margin-top: 12px; padding: 11px 18px; border-radius: 10px; background: var(--accent); color: var(--accent-text); text-decoration: none; font-weight: 650; }
+  .btn.secondary { background: transparent; color: var(--accent); border: 1px solid var(--line); }
+  .pill { display: inline-block; font-size: 13px; padding: 2px 10px; border-radius: 99px; border: 1px solid var(--line); color: var(--muted); }
+  .pill.ok { color: var(--ok); border-color: currentColor; }
+  .pill.warn { color: var(--warn); border-color: currentColor; }
+  small { color: var(--muted); }
+  code { font: 14px ui-monospace, Menlo, monospace; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <img src="/apple-touch-icon.png" alt="">
+    <div>
+      <h1>TabletMonitor</h1>
+      <p>Use este aparelho como segundo monitor do PC <b id="pc">—</b>. Sem App Store, sem conta de desenvolvedor.</p>
+    </div>
+  </header>
+
+  <div class="card">
+    <div class="step">
+      <div class="num">1</div>
+      <div>
+        <h2>Instale o certificado do PC <span id="certState" class="pill">verificando…</span></h2>
+        <small>Uma vez só. Libera o vídeo H.264 com pouco atraso (o Safari só decodifica vídeo em página segura).</small>
+        <ol>
+          <li>Toque em <b>Baixar perfil</b> e em <b>Permitir</b>.</li>
+          <li>Abra <b>Ajustes</b> &gt; <b>Perfil Baixado</b> (no topo) &gt; <b>Instalar</b>.</li>
+          <li>Em <b>Ajustes &gt; Geral &gt; Sobre &gt; Ajustes de Confiança de Certificados</b>, ative <b>TabletMonitor CA</b>.</li>
+        </ol>
+        <a class="btn" href="/ca.mobileconfig">Baixar perfil</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="step">
+      <div class="num">2</div>
+      <div>
+        <h2>Abra o app e adicione à Tela de Início</h2>
+        <ol>
+          <li>Toque em <b>Abrir TabletMonitor</b>.</li>
+          <li>No Safari: <b>Compartilhar</b> (quadrado com seta) &gt; <b>Adicionar à Tela de Início</b>.</li>
+          <li>Daqui para frente, abra pelo ícone: ele roda em tela cheia, como um app.</li>
+        </ol>
+        <a class="btn" id="openSecure" href="#">Abrir TabletMonitor</a>
+        <a class="btn secondary" id="openCompat" href="/app?modo=jpeg">Modo compatível (sem certificado)</a>
+        <p><small>O modo compatível usa JPEG: funciona em qualquer iOS, mas gasta mais Wi-Fi e tem um pouco mais de atraso.</small></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="step">
+      <div class="num">3</div>
+      <div>
+        <h2>Deixe o aparelho dedicado (opcional)</h2>
+        <ul>
+          <li><b>Acesso Guiado</b>: Ajustes &gt; Acessibilidade &gt; Acesso Guiado &gt; ativar. Abra o TabletMonitor e clique 3× no botão lateral (ou Início) para travar o aparelho nele.</li>
+          <li><b>Bloqueio Automático</b>: Ajustes &gt; Tela e Brilho &gt; Bloqueio Automático &gt; <b>Nunca</b> (enquanto estiver na tomada).</li>
+          <li>Desative as notificações para não aparecerem por cima da imagem (Foco &gt; Não Perturbe).</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <p><small id="env"></small></p>
+</main>
+<script>
+'use strict';
+(async () => {
+  let info = { http: Number(location.port) || 27185, https: 27186, pc: '' };
+  try { info = Object.assign(info, await (await fetch('/info.json')).json()); } catch (_) {}
+  document.getElementById('pc').textContent = info.pc || location.hostname;
+
+  const host = location.hostname;
+  const secureUrl = `https://${host}:${info.https}/app`;
+  const open = document.getElementById('openSecure');
+  open.href = info.https ? secureUrl : '/app';
+
+  // Descobre se o certificado já é confiável: a requisição HTTPS só passa se o aparelho confiar na CA do PC.
+  const state = document.getElementById('certState');
+  if (!info.https) {
+    state.textContent = 'HTTPS desligado no PC'; state.className = 'pill warn';
+  } else if (location.protocol === 'https:') {
+    state.textContent = 'confiável ✓'; state.className = 'pill ok';
+  } else {
+    try {
+      const ctl = new AbortController();
+      setTimeout(() => ctl.abort(), 4000);
+      await fetch(`https://${host}:${info.https}/ping`, { mode: 'no-cors', cache: 'no-store', signal: ctl.signal });
+      state.textContent = 'confiável ✓'; state.className = 'pill ok';
+    } catch (_) {
+      state.textContent = 'ainda não confiável'; state.className = 'pill warn';
+    }
+  }
+
+  const ua = navigator.userAgent;
+  const m = ua.match(/OS (\d+)_(\d+)/);
+  const ios = m ? `iOS/iPadOS ${m[1]}.${m[2]}` : 'navegador';
+  const wc = typeof VideoDecoder !== 'undefined';
+  document.getElementById('env').textContent =
+    `${ios} · WebCodecs ${wc ? 'disponível' : (isSecureContext ? 'indisponível (precisa iOS 16.4+)' : 'só em HTTPS')} · PC ${host}`;
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+# TabletMonitor — no primeiro boot, torna o app "dono do dispositivo" (modo dedicado) sem precisar do PC.
+# Usa o domínio "su", que existe nas builds userdebug (padrão da LineageOS). Se não existir, o init
+# só registra um erro e o modo dedicado é ativado pelo app do Windows na primeira conexão USB.
+service tabletmonitor_owner /system/bin/sh /system/etc/tabletmonitor-owner.sh
+    user root
+    group root
+    seclabel u:r:su:s0
+    oneshot
+    disabled
+
+on property:sys.boot_completed=1
+    start tabletmonitor_owner

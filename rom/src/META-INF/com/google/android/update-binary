@@ -1,0 +1,238 @@
+#!/sbin/sh
+# =====================================================================================
+#  TabletMonitor ROM — transforma a ROM instalada (LineageOS 17.1 do SM-T520 / n2awifi)
+#  num sistema dedicado: o tablet liga direto como segundo monitor do PC.
+#
+#  Modo é escolhido pelo NOME do arquivo .zip:
+#    ...-restaurar.zip   desfaz tudo (devolve o que foi removido)
+#    ...-semgoogle...    também remove Play Store / Play Services
+#    (qualquer outro)    instalação normal
+#
+#  Nada é apagado: o que sai do sistema vai para /system/.tabletmonitor-backup
+#  (dentro da própria partição, sem ocupar espaço extra).
+#  Toda remoção usa ${VAR:?} — se uma variável estiver vazia o script para, em vez de apagar algo errado.
+# =====================================================================================
+
+OUTFD="$2"
+ZIPFILE="$3"
+TMP=/tmp/tabletmonitor-rom
+
+ui_print() {
+  if [ -n "$OUTFD" ] && [ -e "/proc/self/fd/$OUTFD" ]; then
+    echo "ui_print $1" >> "/proc/self/fd/$OUTFD"
+    echo "ui_print" >> "/proc/self/fd/$OUTFD"
+  else
+    echo "$1"
+  fi
+}
+cleanup() {
+  cd /
+  if [ -z "$TM_TEST_SYS" ]; then umount /system_root 2>/dev/null; umount /system 2>/dev/null; fi
+  rm -rf "${TMP:?}"
+}
+abort() { ui_print " "; ui_print "ERRO: $1"; ui_print "Nada foi alterado depois deste ponto."; cleanup; exit 1; }
+# chcon pode não existir no ambiente de teste
+setctx() { chcon "$2" "$1" 2>/dev/null || true; }
+glob_match() { case "$1" in $2) return 0;; esac; return 1; }
+
+ZIPNAME=$(basename "$ZIPFILE" | tr 'A-Z' 'a-z')
+MODE=install
+case "$ZIPNAME" in *restaurar*|*restore*|*uninstall*|*desfazer*) MODE=restore;; esac
+NOGOOGLE=0
+case "$ZIPNAME" in *semgoogle*|*nogoogle*|*nogapps*) NOGOOGLE=1;; esac
+
+ui_print " "
+ui_print "=========================================="
+ui_print "  TabletMonitor ROM  (SM-T520 / n2awifi)"
+ui_print "=========================================="
+if [ "$MODE" = restore ]; then ui_print "  Modo: RESTAURAR"
+elif [ $NOGOOGLE = 1 ]; then ui_print "  Modo: instalar (sem Google)"
+else ui_print "  Modo: instalar"; fi
+ui_print " "
+
+# ------------------------------------------------------------------ montar /system
+mount_system() {
+  if [ -n "$TM_TEST_SYS" ]; then SYS="$TM_TEST_SYS"; return 0; fi
+  mount /system_root 2>/dev/null
+  mount /system 2>/dev/null
+  # Samsung Exynos: a partição se chama SYSTEM (maiúsculo)
+  if ! [ -f /system/build.prop ] && ! [ -f /system/system/build.prop ] && ! [ -f /system_root/system/build.prop ]; then
+    for b in /dev/block/by-name/system /dev/block/by-name/SYSTEM /dev/block/platform/*/by-name/SYSTEM /dev/block/platform/*/by-name/system; do
+      [ -e "$b" ] && mount -t ext4 -o rw "$b" /system 2>/dev/null && break
+    done
+  fi
+  if [ -f /system_root/system/build.prop ]; then SYS=/system_root/system; MNT=/system_root
+  elif [ -f /system/system/build.prop ]; then SYS=/system/system; MNT=/system
+  elif [ -f /system/build.prop ]; then SYS=/system; MNT=/system
+  else return 1; fi
+  mount -o rw,remount "$MNT" 2>/dev/null || mount -o rw,remount "$MNT" "$MNT" 2>/dev/null
+  return 0
+}
+
+mount_system || abort "não consegui montar /system. No TWRP: Montar > marque System e desmarque 'somente leitura'."
+[ -n "$SYS" ] && [ -d "$SYS" ] || abort "caminho do sistema inválido."
+touch "$SYS/.tm_rw_test" 2>/dev/null && rm -f "${SYS:?}/.tm_rw_test" || abort "/system está somente leitura. No TWRP: Montar > desmarque 'Montar system como somente leitura'."
+ui_print "- Sistema em $SYS"
+
+BK="$SYS/.tabletmonitor-backup"
+MOVED="$BK/movidos.txt"
+PROP="$SYS/build.prop"
+APP_ROOTS="app priv-app product/app product/priv-app system_ext/app system_ext/priv-app"
+
+# ------------------------------------------------------------------ restaurar
+if [ "$MODE" = restore ]; then
+  [ -d "$BK" ] || abort "não há backup do TabletMonitor neste sistema (nada para desfazer)."
+  ui_print "- Removendo arquivos do TabletMonitor"
+  rm -rf "${SYS:?}/priv-app/TabletMonitor"
+  rm -f "${SYS:?}/etc/permissions/privapp-permissions-tabletmonitor.xml" \
+        "${SYS:?}/etc/init/tabletmonitor.rc" "${SYS:?}/etc/tabletmonitor-owner.sh" "${SYS:?}/etc/tabletmonitor-rom.txt"
+  [ -f "$BK/.bootanim-novo" ] && rm -f "${SYS:?}/media/bootanimation.zip"
+  ui_print "- Devolvendo apps e arquivos originais"
+  if [ -f "$MOVED" ]; then
+    while IFS= read -r rel; do
+      [ -z "$rel" ] && continue
+      if [ -e "$BK/files/$rel" ]; then
+        mkdir -p "$(dirname "$SYS/$rel")"
+        rm -rf "${SYS:?}/${rel:?}"
+        mv "$BK/files/$rel" "$SYS/$rel" && ui_print "    $rel"
+      fi
+    done < "$MOVED"
+  fi
+  if [ -f "$BK/build.prop.orig" ]; then
+    cp -p "$BK/build.prop.orig" "$PROP"
+    setctx "$PROP" u:object_r:system_file:s0
+    ui_print "- build.prop original restaurado"
+  fi
+  rm -rf "${SYS:?}/.tabletmonitor-backup"
+  ui_print " "
+  ui_print "Pronto. Sistema restaurado."
+  ui_print "Recomendado: Limpar > Formatar dados (ou restaurar de fábrica)"
+  ui_print "para tirar também o modo dedicado do tablet."
+  cleanup
+  exit 0
+fi
+
+# ------------------------------------------------------------------ verificações
+SDK=$(grep -m1 '^ro.build.version.sdk=' "$PROP" | cut -d= -f2)
+DEVICE=$(grep -m1 -E '^ro.product.(system.)?device=' "$PROP" | cut -d= -f2)
+[ -z "$DEVICE" ] && DEVICE=$(grep -m1 '^ro.build.product=' "$PROP" | cut -d= -f2)
+ui_print "- Android SDK $SDK, aparelho '$DEVICE'"
+if [ -n "$SDK" ] && [ "$SDK" -lt 26 ]; then abort "precisa de Android 8 ou mais novo (este é SDK $SDK)."; fi
+case "$DEVICE" in
+  n2awifi|*picasso*|SM-T520|*t520*) ;;
+  *) ui_print "  AVISO: feito para o SM-T520 (n2awifi); este é '$DEVICE'. Continuando mesmo assim.";;
+esac
+
+mkdir -p "$TMP"
+cd "$TMP" || abort "sem /tmp"
+unzip -o "$ZIPFILE" 'tm/*' -d "$TMP" >/dev/null 2>&1 || abort "não consegui extrair o pacote."
+[ -f "$TMP/tm/TabletMonitor.apk" ] || abort "pacote incompleto (falta o APK)."
+
+mkdir -p "$BK/files"
+touch "$MOVED"
+
+# Move "$1" (relativo a $SYS) para o backup. Se já foi movido antes (reinstalação), só remove a cópia nova.
+backup_move() {
+  rel="$1"
+  [ -n "$rel" ] || return 1
+  [ -e "$SYS/$rel" ] || return 1
+  if grep -qxF "$rel" "$MOVED"; then rm -rf "${SYS:?}/${rel:?}"; return 0; fi
+  mkdir -p "$(dirname "$BK/files/$rel")"
+  mv "$SYS/$rel" "$BK/files/$rel" || return 1
+  echo "$rel" >> "$MOVED"
+  return 0
+}
+
+# Nunca remover componentes essenciais, mesmo se um padrão casar por engano.
+PROTECTED="TabletMonitor *WebView* *Library* SystemUI* Settings* *Provider* *Providers* LatinIME *Ime* *Keyboard* Shell PackageInstaller* PermissionController* Bluetooth* *Wifi* Tethering* NetworkStack* InProcessNetworkStack* CaptivePortalLogin ExtServices ExtShared GoogleExtServices GoogleExtShared CertInstaller DocumentsUI framework* TeleService Telecom FusedLocation* InputDevices LineageParts LineageSettings* TrebuchetOverlay* StatementService KeyChain MediaProvider* ModuleMetadata* LineageSetupWizard"
+
+is_protected() {
+  for p in $PROTECTED; do glob_match "$1" "$p" && return 0; done
+  return 1
+}
+
+debloat_list() {
+  grep -v '^[[:space:]]*#' "$1" | grep -v '^[[:space:]]*$' | tr -d '\r' | while IFS= read -r pat; do
+    for root in $APP_ROOTS; do
+      [ -d "$SYS/$root" ] || continue
+      for d in "$SYS/$root"/*; do
+        [ -d "$d" ] || continue
+        name=$(basename "$d")
+        glob_match "$name" "$pat" || continue
+        is_protected "$name" && continue
+        backup_move "$root/$name" && ui_print "    removido: $root/$name"
+      done
+    done
+  done
+}
+
+# ------------------------------------------------------------------ instalar
+ui_print "- Instalando o TabletMonitor como app de sistema"
+rm -rf "${SYS:?}/priv-app/TabletMonitor"
+mkdir -p "$SYS/priv-app/TabletMonitor"
+cp "$TMP/tm/TabletMonitor.apk" "$SYS/priv-app/TabletMonitor/TabletMonitor.apk"
+chmod 0755 "$SYS/priv-app/TabletMonitor"
+chmod 0644 "$SYS/priv-app/TabletMonitor/TabletMonitor.apk"
+setctx "$SYS/priv-app/TabletMonitor" u:object_r:system_file:s0
+setctx "$SYS/priv-app/TabletMonitor/TabletMonitor.apk" u:object_r:system_file:s0
+
+mkdir -p "$SYS/etc/permissions" "$SYS/etc/init"
+cp "$TMP/tm/privapp-permissions-tabletmonitor.xml" "$SYS/etc/permissions/"
+cp "$TMP/tm/tabletmonitor.rc" "$SYS/etc/init/"
+cp "$TMP/tm/tabletmonitor-owner.sh" "$SYS/etc/"
+chmod 0644 "$SYS/etc/permissions/privapp-permissions-tabletmonitor.xml" "$SYS/etc/init/tabletmonitor.rc"
+chmod 0755 "$SYS/etc/tabletmonitor-owner.sh"
+setctx "$SYS/etc/permissions/privapp-permissions-tabletmonitor.xml" u:object_r:system_file:s0
+setctx "$SYS/etc/init/tabletmonitor.rc" u:object_r:system_file:s0
+setctx "$SYS/etc/tabletmonitor-owner.sh" u:object_r:system_file:s0
+
+ui_print "- Removendo tela inicial e apps desnecessários"
+debloat_list "$TMP/tm/debloat.txt"
+if [ $NOGOOGLE = 1 ]; then
+  ui_print "- Removendo serviços do Google"
+  debloat_list "$TMP/tm/debloat-google.txt"
+fi
+
+ui_print "- Animação de inicialização"
+if [ -f "$TMP/tm/bootanimation.zip" ]; then
+  mkdir -p "$SYS/media"
+  if [ -f "$SYS/media/bootanimation.zip" ] && [ ! -f "$BK/.bootanim-novo" ]; then
+    backup_move "media/bootanimation.zip"
+  fi
+  cp "$TMP/tm/bootanimation.zip" "$SYS/media/bootanimation.zip"
+  chmod 0644 "$SYS/media/bootanimation.zip"
+  setctx "$SYS/media/bootanimation.zip" u:object_r:system_file:s0
+  touch "$BK/.bootanim-novo"
+fi
+
+ui_print "- Ajustando build.prop"
+PMODE=$(stat -c %a "$PROP" 2>/dev/null); [ -z "$PMODE" ] && PMODE=600
+[ -f "$BK/build.prop.orig" ] || cp -p "$PROP" "$BK/build.prop.orig"
+sed -i '/^# >>> TabletMonitor/,/^# <<< TabletMonitor/d' "$PROP"
+{
+  echo "# >>> TabletMonitor"
+  echo "ro.tabletmonitor.rom=1"
+  echo "persist.sys.usb.config=mtp,adb"
+  echo "persist.service.adb.enable=1"
+  echo "wifi.supplicant_scan_interval=60"
+  if [ $NOGOOGLE = 1 ]; then echo "ro.setupwizard.mode=DISABLED"; fi
+  echo "# <<< TabletMonitor"
+} >> "$PROP"
+chmod "$PMODE" "$PROP"
+setctx "$PROP" u:object_r:system_file:s0
+
+{
+  echo "TabletMonitor ROM"
+  echo "instalado: $(date)"
+  if [ $NOGOOGLE = 1 ]; then echo "modo: semgoogle"; else echo "modo: normal"; fi
+  echo "aparelho: $DEVICE / SDK $SDK"
+} > "$SYS/etc/tabletmonitor-rom.txt"
+chmod 0644 "$SYS/etc/tabletmonitor-rom.txt"
+
+ui_print " "
+ui_print "Pronto!"
+ui_print "- Recomendado: Limpar > Formatar dados antes do"
+ui_print "  primeiro boot (o modo dedicado exige tablet sem contas)."
+ui_print "- Para desfazer: instale o TabletMonitorROM-restaurar.zip"
+cleanup
+exit 0

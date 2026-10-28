@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Partes comuns dos apps de Windows e macOS: configurações, adb/preparação do tablet, ffmpeg, codificação. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>TabletMonitor</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\TabletMonitor.Core\TabletMonitor.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- APK do tablet embutido, para a preparação automática do tablet -->
+    <EmbeddedResource Include="Assets\TabletMonitor.apk" LogicalName="TabletMonitor.apk" Condition="Exists('Assets\TabletMonitor.apk')" />
+  </ItemGroup>
+</Project>

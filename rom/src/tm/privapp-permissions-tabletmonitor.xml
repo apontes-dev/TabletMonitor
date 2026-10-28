@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Permissões privilegiadas do TabletMonitor como app de sistema (priv-app).
+     Só WRITE_SECURE_SETTINGS: o app ajusta o sistema sozinho (tela sempre ligada,
+     aparelho "configurado" sem assistente, animações desligadas, depuração USB ligada). -->
+<permissions>
+    <privapp-permissions package="com.apontes.tabletmonitor">
+        <permission name="android.permission.WRITE_SECURE_SETTINGS" />
+    </privapp-permissions>
+</permissions>

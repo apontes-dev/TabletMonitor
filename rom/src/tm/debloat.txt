@@ -1,0 +1,51 @@
+# Pastas de apps (em app/, priv-app/, product/…) que a ROM remove — movidas para o backup, não apagadas.
+# Uma por linha; * vale como curinga. Linhas com # são comentários.
+# Tela inicial (o TabletMonitor passa a ser a única)
+Trebuchet*
+Launcher3*
+*Launcher
+# Apps da LineageOS que não servem para um monitor
+AudioFX
+Eleven
+Jelly
+Etar
+Recorder
+Gallery2
+Camera2
+Snap
+Aperture
+DeskClock
+Email
+ExactCalculator
+Updater
+FMRadio
+LiveWallpapersPicker
+LiveWallpapers
+PhotoTable
+BasicDreams
+WallpaperPicker*
+ThemePicker
+Stk
+Music
+Browser*
+Calendar
+# Apps Google que vêm com pacotes GApps maiores
+YouTube*
+Chrome*
+Photos
+Gmail2
+Maps
+Drive
+Duo
+Music2
+Videos
+Books
+PlayGames
+Newsstand
+CalendarGoogle*
+Keep
+WellbeingPrebuilt
+Wellbeing*
+Turbo*
+GoogleTTS
+MarkupGoogle

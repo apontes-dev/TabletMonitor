@@ -1,0 +1,26 @@
+TabletMonitor para macOS — instalação
+=====================================
+
+Este app não é assinado pela Apple (isso exige conta de desenvolvedor paga),
+então o macOS precisa de um passo a mais, uma única vez:
+
+1. Arraste o TabletMonitor.app para a pasta Aplicativos.
+
+2. Abra o Terminal (Aplicativos > Utilitários > Terminal) e cole:
+
+   xattr -cr /Applications/TabletMonitor.app && codesign --force --deep --sign - /Applications/TabletMonitor.app
+
+   (o primeiro comando tira a "quarentena" do download; o segundo faz uma
+    assinatura local, exigida pelos Macs com Apple Silicon)
+
+3. Abra o TabletMonitor normalmente. Na primeira vez ele pede:
+   - Gravação de Tela  → para capturar a imagem
+   - Acessibilidade     → para o toque do tablet controlar o mouse
+   - Rede local         → para Wi-Fi e iPhone/iPad
+   Permita em Ajustes do Sistema > Privacidade e Segurança e reabra o app.
+
+4. Para estender a área de trabalho, crie uma tela virtual com o BetterDisplay
+   (botão "Criar tela virtual" no app) ou use um plug HDMI "dummy".
+
+Recomendado (Apple Silicon): brew install ffmpeg  — versão nativa e mais rápida.
+Sem isso, o app baixa um ffmpeg Intel que roda pelo Rosetta.

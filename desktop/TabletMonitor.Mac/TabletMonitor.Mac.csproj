@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>TabletMonitor</AssemblyName>
+    <RootNamespace>TabletMonitor.Mac</RootNamespace>
+    <Version>1.0.0</Version>
+    <!-- Publicação: app autocontido (não precisa instalar .NET). Empacotado em .app por packaging/make-app.sh -->
+    <SelfContained>true</SelfContained>
+    <DebugType>none</DebugType>
+    <InvariantGlobalization>false</InvariantGlobalization>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.22" />
+    <PackageReference Include="QRCoder" Version="1.6.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\TabletMonitor.Core\TabletMonitor.Core.csproj" />
+    <ProjectReference Include="..\TabletMonitor.Host\TabletMonitor.Host.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\icon.png" LogicalName="icon.png" />
+  </ItemGroup>
+</Project>
